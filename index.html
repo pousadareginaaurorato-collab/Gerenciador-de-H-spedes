@@ -157,7 +157,7 @@
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 28px; }
 
-    /* Calendário Redesenhado Contínuo */
+    /* Calendário Perpétuo */
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
     .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
     .cal-day-name { text-align: center; font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
@@ -172,18 +172,18 @@
     .cal-event.checkout { background: #fef3c7; color: #92400e; border-left-color: #d97706; }
     .cal-event.stay { background: #e0f2fe; color: #0369a1; border-left-color: #0284c7; }
     
-    /* Controles Superiores do Calendário */
+    /* Controles do Calendário */
     .cal-nav { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; background: #f1f5f9; padding: 12px; border-radius: var(--radius-md); }
     .cal-nav h3 { font-size: 16px; font-weight: 600; flex: 1; text-align: center; text-transform: capitalize; }
 
     /* Grid de Quartos */
-    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
-    .room-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; transition: transform 0.2s, box-shadow 0.2s; position: relative; display: flex; flex-direction: column; }
+    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+    .room-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; justify-content: space-between; min-height: 190px; }
     .room-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
     .room-num { font-size: 24px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 4px; }
-    .room-type { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 12px; }
-    .room-price { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 16px; flex-grow: 1; }
-    .room-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+    .room-type { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; }
+    .room-price { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 12px; }
+    .room-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
     
     .empty { text-align: center; padding: 48px; color: var(--text-muted); font-size: 15px; }
   </style>
@@ -368,7 +368,7 @@ let reservas = [
 ];
 
 let editId = null;
-let editRoomId = null; // Controla se estamos editando um quarto
+let editRoomId = null;
 let calMonth = today.getMonth();
 let calYear = today.getFullYear();
 let nextId = 5;
@@ -393,7 +393,7 @@ function renderPainel() {
   const livres = rooms.length - ocupados.size;
   
   document.getElementById('metrics').innerHTML = `
-    <div class="metric"><div class="metric-label">Hóspedes Hoje</div><div class="metric-value">${hospedados}</div><div class="metric-sub">Em estadia activa</div></div>
+    <div class="metric"><div class="metric-label">Hóspedes Hoje</div><div class="metric-value">${hospedados}</div><div class="metric-sub">Em estadia ativa</div></div>
     <div class="metric"><div class="metric-label">Check-ins Hoje</div><div class="metric-value">${checkins}</div><div class="metric-sub">Chegadas aguardadas</div></div>
     <div class="metric"><div class="metric-label">Check-outs Hoje</div><div class="metric-value">${checkouts}</div><div class="metric-sub">Saídas previstas</div></div>
     <div class="metric"><div class="metric-label">Quartos Livres</div><div class="metric-value">${livres}</div><div class="metric-sub">Prontos para receber</div></div>
@@ -475,16 +475,18 @@ function renderRooms() {
   document.getElementById('rooms-grid').innerHTML = rooms.map(r => {
     const occ = ocupados.has(r.id);
     return `<div class="room-card">
-      <div class="room-num">Qto ${r.num}</div>
-      <div class="room-type">${r.tipo} · individual ou grupos de até ${r.cap} ${r.cap > 1 ? 'pessoas' : 'pessoa'}</div>
-      <div class="room-price">R$ ${r.preco} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">/ noite</span></div>
-      <span class="badge ${occ?'badge-amber':'badge-green'}">${occ?'Ocupado':'Disponível'}</span>
+      <div>
+        <div class="room-num">Qto ${r.num}</div>
+        <div class="room-type">${r.tipo} · Capacidade: ${r.cap} ${r.cap > 1 ? 'pessoas' : 'pessoa'}</div>
+        <div class="room-price">R$ ${r.preco} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">/ noite</span></div>
+        <span class="badge ${occ?'badge-amber':'badge-green'}">${occ?'Ocupado':'Disponível'}</span>
+      </div>
       <div class="room-actions">
         <button class="btn btn-sm" onclick="editRoom(${r.id})" title="Editar Quarto"><i class="ti ti-edit"></i> Editar</button>
         <button class="btn btn-sm btn-danger" onclick="deleteRoom(${r.id})" title="Excluir Quarto"><i class="ti ti-trash"></i></button>
       </div>
     </div>`;
-  }).join('');
+  }).join('') || `<div class="empty" style="grid-column: 1/-1;">Nenhum quarto cadastrado.</div>`;
 }
 
 function renderAll() {
@@ -542,3 +544,91 @@ function saveReserva() {
   const co = document.getElementById('f-checkout').value;
   if (!nome || !ci || !co) { alert('Preencha nome, check-in e check-out.'); return; }
   if (ci > co) { alert('A data de check-out deve ser posterior ao check-in.'); return; }
+  
+  const obj = {
+    id: editId || nextId++,
+    nome, tel: document.getElementById('f-tel').value,
+    checkin: ci, checkout: co,
+    quartoId: parseInt(document.getElementById('f-quarto').value),
+    status: document.getElementById('f-status').value,
+    obs: document.getElementById('f-obs').value,
+  };
+  
+  if (editId) {
+    const idx = reservas.findIndex(r => r.id === editId);
+    reservas[idx] = obj;
+  } else {
+    reservas.unshift(obj);
+  }
+  closeModal(); renderAll();
+}
+
+function editReserva(id) { openModal(id); }
+
+function deleteReserva(id) {
+  if (confirm('Tem certeza que deseja remover esta reserva?')) {
+    reservas = reservas.filter(r => r.id !== id);
+    renderAll();
+  }
+}
+
+function openRoomModal(id) {
+  editRoomId = id || null;
+  if (id) {
+    const r = rooms.find(x => x.id === id);
+    document.getElementById('room-modal-title').textContent = 'Editar Quarto';
+    document.getElementById('r-num').value = r.num;
+    document.getElementById('r-tipo').value = r.tipo;
+    document.getElementById('r-preco').value = r.preco;
+    document.getElementById('r-cap').value = r.cap;
+  } else {
+    document.getElementById('room-modal-title').textContent = 'Adicionar Novo Quarto';
+    document.getElementById('r-num').value = '';
+    document.getElementById('r-tipo').value = 'Solteiro';
+    document.getElementById('r-preco').value = '';
+    document.getElementById('r-cap').value = '';
+  }
+  document.getElementById('room-modal').classList.add('open');
+}
+
+function closeRoomModal() { document.getElementById('room-modal').classList.remove('open'); }
+
+function editRoom(id) { openRoomModal(id); }
+
+function saveRoom() {
+  const num = document.getElementById('r-num').value.trim();
+  const preco = parseInt(document.getElementById('r-preco').value) || 0;
+  const cap = parseInt(document.getElementById('r-cap').value) || 2;
+  const tipo = document.getElementById('r-tipo').value;
+  
+  if (!num) { alert('Informe o número do quarto.'); return; }
+  
+  if (editRoomId) {
+    const idx = rooms.findIndex(r => r.id === editRoomId);
+    rooms[idx] = { ...rooms[idx], num, tipo, preco, cap };
+  } else {
+    rooms.push({ id: Date.now(), num, tipo, preco, cap });
+  }
+  
+  closeRoomModal(); renderAll();
+}
+
+function deleteRoom(id) {
+  const temReserva = reservas.some(r => r.quartoId === id);
+  if (temReserva) {
+    alert('Não é possível excluir este quarto porque existem reservas associadas a ele.');
+    return;
+  }
+  if (confirm('Tem certeza que deseja remover este quarto permanentemente?')) {
+    rooms = rooms.filter(r => r.id !== id);
+    renderAll();
+  }
+}
+
+document.getElementById('modal').addEventListener('click', e => { if(e.target === document.getElementById('modal')) closeModal(); });
+document.getElementById('room-modal').addEventListener('click', e => { if(e.target === document.getElementById('room-modal')) closeRoomModal(); });
+
+renderAll();
+</script>
+</body>
+</html>
