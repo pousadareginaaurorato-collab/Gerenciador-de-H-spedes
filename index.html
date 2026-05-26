@@ -349,8 +349,8 @@
 const today = new Date();
 const todayStr = today.toISOString().slice(0,10);
 
-// CARREGAMENTO SEGURO DO LOCALSTORAGE (Se não houver dados salvos, usa o padrão inicial)
-let defaultRooms = [
+// Dados padrão iniciais (Só serão usados se o utilizador NUNCA tiver guardado nada)
+const defaultRooms = [
   { id:1, num:'101', tipo:'Solteiro', preco:80, cap:1 },
   { id:2, num:'102', tipo:'Duplo', preco:120, cap:2 },
   { id:3, num:'103', tipo:'Casal', preco:130, cap:2 },
@@ -358,18 +358,39 @@ let defaultRooms = [
   { id:5, num:'201', tipo:'Solteiro', preco:80, cap:1 },
   { id:6, num:'202', tipo:'Duplo', preco:120, cap:2 },
   { id:7, num:'203', tipo:'Casal', preco:130, cap:2 },
-  { id:8, num:'204', tipo:'Suíte', preco:200, cap:4 },
+  { id:8, num:'204', tipo:'Suíte', preco:200, cap:4 }
 ];
 
-let defaultReservas = [
+const defaultReservas = [
   { id:1, nome:'Juliana Costa', tel:'(63) 99999-0001', checkin:'2026-05-21', checkout:'2026-05-26', quartoId:1, status:'Finalizada', obs:'' },
   { id:2, nome:'Roberto Farias', tel:'(63) 99999-0002', checkin:'2026-05-28', checkout:'2026-05-31', quartoId:4, status:'Confirmada', obs:'Quer quarto no andar de cima' },
   { id:3, nome:'Ana Beatriz Lima', tel:'(63) 99999-0003', checkin:'2026-05-30', checkout:'2026-05-30', quartoId:6, status:'Confirmada', obs:'' },
-  { id:4, nome:'Carlos Mendes', tel:'(63) 99999-0004', checkin:'2026-05-24', checkout:'2026-05-27', quartoId:2, status:'Hospedado', obs:'Viagem de negócios' },
+  { id:4, nome:'Carlos Mendes', tel:'(63) 99999-0004', checkin:'2026-05-24', checkout:'2026-05-27', quartoId:2, status:'Hospedado', obs:'Viagem de negócios' }
 ];
 
-let rooms = JSON.parse(localStorage.getItem('horizonte_rooms')) || defaultRooms;
-let reservas = JSON.parse(localStorage.getItem('horizonte_reservas')) || defaultReservas;
+// LÓGICA DE CARREGAMENTO CORRIGIDA (Garante prioridade absoluta ao que foi salvo pelo utilizador)
+let rooms = defaultRooms;
+let reservas = defaultReservas;
+
+try {
+  const savedRooms = localStorage.getItem('horizonte_rooms_v2');
+  const savedReservas = localStorage.getItem('horizonte_reservas_v2');
+  
+  if (savedRooms !== null) {
+    rooms = JSON.parse(savedRooms);
+  } else {
+    // Se for a primeira execução, guarda os padrões para iniciar o banco local
+    localStorage.setItem('horizonte_rooms_v2', JSON.stringify(defaultRooms));
+  }
+  
+  if (savedReservas !== null) {
+    reservas = JSON.parse(savedReservas);
+  } else {
+    localStorage.setItem('horizonte_reservas_v2', JSON.stringify(defaultReservas));
+  }
+} catch (e) {
+  console.error("Erro ao ler do localStorage", e);
+}
 
 let editId = null;
 let editRoomId = null;
@@ -377,10 +398,14 @@ let calMonth = today.getMonth();
 let calYear = today.getFullYear();
 let nextId = reservas.length ? Math.max(...reservas.map(r => r.id)) + 1 : 1;
 
-// FUNÇÃO PARA GRAVAR ALTERAÇÕES AUTOMATICAMENTE
+// FUNÇÃO DE GRAVAÇÃO IMEDIATA E INTACTA
 function syncStorage() {
-  localStorage.setItem('horizonte_rooms', JSON.stringify(rooms));
-  localStorage.setItem('horizonte_reservas', JSON.stringify(reservas));
+  try {
+    localStorage.setItem('horizonte_rooms_v2', JSON.stringify(rooms));
+    localStorage.setItem('horizonte_reservas_v2', JSON.stringify(reservas));
+  } catch(e) {
+    console.error("Erro ao salvar dados", e);
+  }
 }
 
 function getRoom(id) { return rooms.find(r => r.id === id) || {}; }
