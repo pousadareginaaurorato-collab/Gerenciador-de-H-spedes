@@ -177,12 +177,13 @@
     .cal-nav h3 { font-size: 16px; font-weight: 600; flex: 1; text-align: center; text-transform: capitalize; }
 
     /* Grid de Quartos */
-    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
-    .room-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; transition: transform 0.2s, box-shadow 0.2s; }
+    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+    .room-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; transition: transform 0.2s, box-shadow 0.2s; position: relative; display: flex; flex-direction: column; }
     .room-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
     .room-num { font-size: 24px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 4px; }
     .room-type { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 12px; }
-    .room-price { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 16px; }
+    .room-price { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 16px; flex-grow: 1; }
+    .room-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
     
     .empty { text-align: center; padding: 48px; color: var(--text-muted); font-size: 15px; }
   </style>
@@ -314,7 +315,7 @@
 
 <div class="modal-overlay" id="room-modal">
   <div class="modal">
-    <h3>Adicionar Novo Quarto</h3>
+    <h3 id="room-modal-title">Adicionar Novo Quarto</h3>
     <div class="form-row">
       <div class="form-group">
         <label>Número</label>
@@ -367,6 +368,7 @@ let reservas = [
 ];
 
 let editId = null;
+let editRoomId = null; // Controla se estamos editando um quarto
 let calMonth = today.getMonth();
 let calYear = today.getFullYear();
 let nextId = 5;
@@ -391,7 +393,7 @@ function renderPainel() {
   const livres = rooms.length - ocupados.size;
   
   document.getElementById('metrics').innerHTML = `
-    <div class="metric"><div class="metric-label">Hóspedes Hoje</div><div class="metric-value">${hospedados}</div><div class="metric-sub">Em estadia ativa</div></div>
+    <div class="metric"><div class="metric-label">Hóspedes Hoje</div><div class="metric-value">${hospedados}</div><div class="metric-sub">Em estadia activa</div></div>
     <div class="metric"><div class="metric-label">Check-ins Hoje</div><div class="metric-value">${checkins}</div><div class="metric-sub">Chegadas aguardadas</div></div>
     <div class="metric"><div class="metric-label">Check-outs Hoje</div><div class="metric-value">${checkouts}</div><div class="metric-sub">Saídas previstas</div></div>
     <div class="metric"><div class="metric-label">Quartos Livres</div><div class="metric-value">${livres}</div><div class="metric-sub">Prontos para receber</div></div>
@@ -432,17 +434,14 @@ function renderCalendario() {
   const firstDay = new Date(calYear, calMonth, 1).getDay();
   let html = '';
   
-  // Retrocede para o domingo da primeira semana (mesmo que seja do mês anterior)
   let datePointer = new Date(calYear, calMonth, 1);
   datePointer.setDate(datePointer.getDate() - firstDay);
 
-  // Renderiza rigorosamente 6 semanas completas (42 quadrantes) para evitar quebras visuais
   for (let i = 0; i < 42; i++) {
     const currentYear = datePointer.getFullYear();
     const currentMonth = datePointer.getMonth();
     const currentDay = datePointer.getDate();
     
-    // ISO string manual segura para fuso horário local
     const currentMonthStr = String(currentMonth + 1).padStart(2, '0');
     const currentDayStr = String(currentDay).padStart(2, '0');
     const ds = `${currentYear}-${currentMonthStr}-${currentDayStr}`;
@@ -480,6 +479,10 @@ function renderRooms() {
       <div class="room-type">${r.tipo} · individual ou grupos de até ${r.cap} ${r.cap > 1 ? 'pessoas' : 'pessoa'}</div>
       <div class="room-price">R$ ${r.preco} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">/ noite</span></div>
       <span class="badge ${occ?'badge-amber':'badge-green'}">${occ?'Ocupado':'Disponível'}</span>
+      <div class="room-actions">
+        <button class="btn btn-sm" onclick="editRoom(${r.id})" title="Editar Quarto"><i class="ti ti-edit"></i> Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteRoom(${r.id})" title="Excluir Quarto"><i class="ti ti-trash"></i></button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -539,60 +542,3 @@ function saveReserva() {
   const co = document.getElementById('f-checkout').value;
   if (!nome || !ci || !co) { alert('Preencha nome, check-in e check-out.'); return; }
   if (ci > co) { alert('A data de check-out deve ser posterior ao check-in.'); return; }
-  
-  const obj = {
-    id: editId || nextId++,
-    nome, tel: document.getElementById('f-tel').value,
-    checkin: ci, checkout: co,
-    quartoId: parseInt(document.getElementById('f-quarto').value),
-    status: document.getElementById('f-status').value,
-    obs: document.getElementById('f-obs').value,
-  };
-  
-  if (editId) {
-    const idx = reservas.findIndex(r => r.id === editId);
-    reservas[idx] = obj;
-  } else {
-    reservas.unshift(obj);
-  }
-  closeModal(); renderAll();
-}
-
-function editReserva(id) { openModal(id); }
-
-function deleteReserva(id) {
-  if (confirm('Tem certeza que deseja excluir em definitivo esta reserva?')) {
-    reservas = reservas.filter(r => r.id !== id);
-    renderAll();
-  }
-}
-
-function openRoomModal() { document.getElementById('room-modal').classList.add('open'); }
-function closeRoomModal() { document.getElementById('room-modal').classList.remove('open'); }
-
-function saveRoom() {
-  const num = document.getElementById('r-num').value.trim();
-  const preco = parseInt(document.getElementById('r-preco').value) || 0;
-  if (!num) { alert('Informe o número do quarto.'); return; }
-  
-  rooms.push({ 
-    id: Date.now(), 
-    num, 
-    tipo: document.getElementById('r-tipo').value, 
-    preco, 
-    cap: parseInt(document.getElementById('r-cap').value)||2 
-  });
-  
-  closeRoomModal(); renderAll();
-  document.getElementById('r-num').value = ''; 
-  document.getElementById('r-preco').value = ''; 
-  document.getElementById('r-cap').value = '';
-}
-
-document.getElementById('modal').addEventListener('click', e => { if(e.target === document.getElementById('modal')) closeModal(); });
-document.getElementById('room-modal').addEventListener('click', e => { if(e.target === document.getElementById('room-modal')) closeRoomModal(); });
-
-renderAll();
-</script>
-</body>
-</html>
